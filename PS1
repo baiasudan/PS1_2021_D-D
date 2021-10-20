@@ -1,0 +1,97 @@
+// include the library code:
+#include <LiquidCrystal.h>
+#define tempPin A0
+
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+unsigned int secunde[2]={'0','0'};
+unsigned int minute[2]={'0','0'};
+unsigned int ore[2]={'0','0'};
+unsigned int counter=0;
+float temp,temperature;
+//int tempPin = 0;
+
+void setup() {
+  DDRD|=0x40;
+  DDRC=B00000000;
+  
+  TCCR2A = 0;// set entire TCCR2A register to 0
+  TCCR2B = 0;// same for TCCR2B
+  TCNT2  = 0;//initialize counter value to 0
+  
+  TIMSK2=0x01; // validare intrerupere de la Timer 0 Overflow
+  TCCR2A=0x02; // mod CTC
+  TCCR2B=0x07;
+  
+  OCR2A=155;  //16Mhz/(1024*1/10ms)-1=155
+  lcd.begin(16,2);
+  lcd.setCursor(0,0);
+}
+
+void loop() 
+{
+  lcd.setCursor(0,0);
+  temp = analogRead(tempPin);
+  temperature =((temp*5)/1024-0.5)*100;
+  lcd.print("Temp=");
+  lcd.print(temperature);
+  lcd.print("*C");
+ lcd.setCursor(0,1);
+  lcd.print("Ora:");
+  lcd.write(ore[1]);
+  lcd.write(ore[0]);
+  lcd.write(':');
+  lcd.write(minute[1]);
+  lcd.write(minute[0]);
+  lcd.write(':');
+  lcd.write(secunde[1]);
+  lcd.write(secunde[0]);
+  delay(100);
+}
+ISR(TIMER2_OVF_vect)
+{
+  
+  PORTD^=0x40;
+  counter++;
+  if(counter==10)
+ {
+   PORTC=B11111111;
+ }
+  Clock();
+}
+
+void Clock()
+{
+ 
+   
+ if(++counter==100)
+ {
+   
+   counter=0;
+   if(++secunde[0]>'9')
+   {
+     secunde[0]='0';
+     if(++secunde[1]>'5')
+     {
+       secunde[1]='0';
+       if(++minute[0]>'9')
+       {
+         minute[0]='0';
+         if(++minute[1]>'5')
+            {
+              minute[1]='0';
+              if(++ore[1]>'9')
+              {
+                ore[0]=0;
+                if(ore[1]>'9')
+                {
+                  ore[1]='0';
+               }
+             }
+          }
+        }
+      }
+    }
+  }
+}
+ 
